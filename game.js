@@ -27,6 +27,9 @@ function sorted(L, keyfunc) {
     return C
 }
 
+/**
+ * = (Python) [value] * N
+ */
 function arrayFilled(value, N) {
     var L = new Array(N)
     for(var i = 0; i < N; i++)
@@ -88,39 +91,90 @@ function noDuplicates(L) {
     return true
 }
 
+const tr_base = {
+    "blanc": ["Blanc", "Dummy"],
+    "personne": ["Personne", "Nobody"],
+    "vous_etes_paralyse", ["Vous êtes paralysé", "You are paralyzed"],
+    "neutre": ["Neutre", "Neutral"],
+    "hôte": ["Hôte", "Host"],
+    "résistant": ["Résistant", "Resistant"],
+    "sain": ["Sain", "Sane"],
+    "mutant": ["Mutant", "Mutant"],
+    "muté": ["Muté", "Mutated"],
+    "paralysé": ["Paralysé", "Paralysed"],
+}
+
+var tr = (function(){ // will vary in first menu only
+    var D = {langid: 0}
+    for(var k in tr_base)
+        D[k] = tr_base[k][0]
+    return D
+})()
+
+function lang(/* arguments... */) {
+    return arguments[tr.langid] || arguments[0]
+}
+
+function mp3lang(basename) {
+    return basename + '.mp3'
+    // return basename + '-' + lang('fr', 'en') + '.mp3'
+}
+
 $(function(){
     var body = $('body')
-    var self = $('<div>')
-    body.append(self)
     
-    var inputs;
-    self.append(
-        $('<div>').html('Indiquez le nom des joueurs ici et <strong>activez le son</strong> !')
-    ).append(
-        inputs = range(8).map(function(i){
-            return $('<input class="joueur-input" type="text" />').attr('placeholder', 'Joueur ' + (i+1))
-        })
-    ).append(
-        $("<div class=ici>").css('display', 'block').text("Ok !").click(function(){
-            var players = inputs.map(function(inp){
-                return inp.val()
+    function refreshMenu() {
+        var self = $('<div>')
+        body.empty().append(self)
+        
+        var inputs, Joueur;
+        self.append(
+            $('<div>').css('font-variant', 'small-caps').html(lang('English', 'French')).click(function(){
+                ++tr.langid %= 2
+                for(var k in tr_base)
+                    tr[k] = tr_base[k][tr.langid]
+                refreshMenu()
             })
-            if(! all(players)) {
-                alert("Il manque des joueurs !")
-            } else if(! noDuplicates(players)) {
-                alert("Deux joueurs ont le même nom !")
-            } else if(any(players.map(function(n){ return n == "Blanc" }))) {
-                alert("Un joueur s'appelle Blanc !")
-            } else {
-                self.remove()
-                beginGame(players)
-            }
-        }).click(function(){
-            $('#intro').hide()
-        })
-    )
+        ).append(
+            $('<div>').html(lang('Indiquez le nom des joueurs ici et <strong>activez le son</strong> !', 'Write players name in here and <strong>turn on the volume</strong>!'))
+        ).append(
+            inputs = range(8).map(Joueur = function(i){
+                return $('<input class="joueur-input" type="text" />').attr('placeholder', lang('Joueur', 'Player') + ' ' + (i+1))
+            })
+        ).append(
+            $("<div class=ici>").css('display', 'block').text('+').click(function(){
+                var n = Joueur(inputs.length)
+                n.insertAfter(inputs[inputs.length-1])
+                inputs.push(n)
+            })
+        ).append(
+            $("<div class=ici>").css('display', 'block').text('−').click(function(){
+                inputs.pop().remove()
+            })
+        ).append(
+            $("<div class=ici>").css('display', 'block').text("Ok !").click(function(){
+                var players = inputs.map(function(inp){
+                    return inp.val()
+                })
+                if(! all(players)) {
+                    alert(lang("Il manque des joueurs !", "Missing players !"))
+                } else if(! noDuplicates(players.map(function(x){ return x.toLowerCase() }))) {
+                    alert(lang("Deux joueurs ont le même nom !", "Two players have the same name !"))
+                } else if(any(players.map(function(n){ return n == tr.blanc }))) {
+                    alert(lang("Un joueur s'appelle Blanc !", "One player is called Dummy!"))
+                } else {
+                    self.remove()
+                    beginGame(players)
+                }
+            }).click(function(){
+                $('#intro').hide()
+            })
+        )
+        
+        inputs[0].focus()
+    }
     
-    inputs[0].focus()
+    refreshMenu()
     
     /*
     beginGame([
@@ -142,7 +196,7 @@ $(function(){
 
 function beginGame(joueursRaw) {
     window.onbeforeunload = function (e) {
-        var message = "La partie sera perdue si vous partez !"
+        var message = lang("La partie sera perdue si vous partez !", "The game will be lost if you leave!")
         e = e || window.event;
         // For IE and Firefox
         if (e) {
@@ -162,13 +216,22 @@ function beginGame(joueursRaw) {
     // joueursRandom = [] 
     var initialorder = joueursRandom.map(function(t){ return t[1]; })
     var joueurs = joueursRandom.map(function(t){ return t[0]; })
-    var roles = ["Mutant de Base", "Médecin #1", "Médecin #2", "Psychologue", "Généticien", "Informaticien", "Hacker", "Espion"]
+    var roles = [
+        lang("Mutant de Base", 'Base Mutant'),
+        lang("Médecin #1", "Doctor #1"),
+        lang("Médecin #2", "Doctor #2"),
+        lang("Psychologue", "Psychologist"),
+        lang("Généticien", "Genetician"),
+        lang("Informaticien", "Programmer"),
+        lang("Hacker"),
+        lang("Espion", "Spy")
+    ]
     var rolesSlug = ["mutant-de-base", "medecin-1", "medecin-2", "psychologue", "geneticien", "informaticien", "hacker", "espion"]
     var nMutants = 1
     var nMedecins = 2
     
-    var genomes = ["Hôte", "Neutre", "Neutre"].concat(shuffled(["Hôte", "Résistant"].concat(arrayFilled("Neutre", J-5))))
-    var etats = ["Mutant"].concat(arrayFilled("Sain", J-1))
+    var genomes = [tr.hôte, tr.neutre, tr.neutre].concat(shuffled([tr.hôte, tr.résistant].concat(arrayFilled(tr.neutre, J-5))))
+    var etats = [tr.mutant].concat(arrayFilled(tr.sain, J-1))
     
     var alive = arrayFilled(true, J)
     
@@ -241,8 +304,8 @@ function beginGame(joueursRaw) {
                         return ('<tr><td>' + [
                             joueurs[i],
                             roles[i],
-                            (genomes[i] == "Neutre" ? "<span class=default_elem>" + genomes[i] + "</span>" : genomes[i]),
-                            (etats[i] == "Sain" ? "<span class=default_elem>" + etats[i] + "</span>" : etats[i]),
+                            (genomes[i] == tr.neutre ? "<span class=default_elem>" + genomes[i] + "</span>" : genomes[i]),
+                            (etats[i] == tr.sain ? "<span class=default_elem>" + etats[i] + "</span>" : etats[i]),
                             (alive[i] ? "<span class=default_elem>" + "Vivant" + "</span>" : "Mort"),
                             toUl(events[i]),
                             toUl(events_hack[i]),
@@ -276,18 +339,18 @@ function beginGame(joueursRaw) {
     var hackablePlayers = mapfilter(joueurs, function(joueur, i){
         return i
     }, function(joueur, i) {
-        return startswith(roles[i], "Psychologue") ||
-        startswith(roles[i], "Généticien") ||
-        startswith(roles[i], "Informaticien")
+        return startswith(rolesSlug[i], "psychologue") ||
+        startswith(rolesSlug[i], "geneticien") ||
+        startswith(rolesSlug[i], "informaticien")
         // With multiples informaciens, one has to decide if
         // - Info1 then Info2 may be hacked
-        // - What happens when hacking a paralysed informaticien
+        // - What happens when hacking a paralysed informaticien -> TODO
     })
     
     var explicationsGenome = {
-        'Neutre': "Peut être muté, puis soigné, puis muté, puis soigné... à l'infini",
-        'Hôte': "Une fois muté, ne peut jamais être soigné.",
-        'Résistant': "Ne peut pas être muté !",
+        tr.neutre: "Peut être muté, puis soigné, puis muté, puis soigné... à l'infini",
+        tr.hôte: "Une fois muté, ne peut jamais être soigné.",
+        tr.résistant: "Ne peut pas être muté !",
     }
     
     function makeEmptyLists() {
@@ -298,13 +361,13 @@ function beginGame(joueursRaw) {
     
     function getNumberOfMutants() {
         return etats.filter(function(x,i){
-            return alive[i] && x == "Mutant"
+            return alive[i] && x == tr.mutant
         }).length
     }
     
     function getNumberOfSains() {
         return etats.filter(function(x,i){
-            return alive[i] && x == "Sain"
+            return alive[i] && x == tr.sain
         }).length
     }
     
@@ -336,7 +399,7 @@ function beginGame(joueursRaw) {
         return $("<div>").append(joueursInOrder.filter(function(i){
             return alive[i]
         }).concat(haveBlanc ? [J] : []).map(function(i) {
-            return $("<span class='item'>").attr("data-i", i).text(joueurs[i])
+            return $("<span class='item'>").attr("data-i", i).text(joueurs[i] || tr.blanc)
         }))
     }
     
@@ -346,7 +409,13 @@ function beginGame(joueursRaw) {
         return $('<div>').append(hackablePlayers.filter(function(i){
             return (alive[i] || contains(mortsAtNight, i)) && i != exclude
         }).concat(haveBlanc ? [J] : []).map(function(i){
-            return $("<span class='item'>").attr("data-i", i).text(i == J ? "Personne" : roles[i])
+            return $("<span class='item'>").attr("data-i", i).text(roles[i] || tr.personne) // (i == J ? "Personne" : roles[i])
+        }))
+    }
+    
+    function getListYesNo() {
+        return $("<div>").append(["Oui", "Non"].map(function(txt, i) {
+            return $("<span class='item'>").attr("data-i", i).text(txt)
         }))
     }
     
@@ -363,6 +432,16 @@ function beginGame(joueursRaw) {
         return makeDeleteList(clickFunction, getListJoueurs)
     }
     
+    function makeYesNoList(clickFunction) {
+        return makeDeleteList(clickFunction, getListYesNo)
+    }
+    
+    function makeListJoueursBlanc(clickFunction) {
+        return makeDeleteList(clickFunction, function(){
+            return getListJoueurs(true)
+        })
+    }
+    
     function makeListRolesHacker(clickFunction, exclude, haveBlanc) {
         return makeDeleteList(clickFunction, function(){
             return getListRolesHacker(exclude, haveBlanc)
@@ -377,6 +456,7 @@ function beginGame(joueursRaw) {
         ].join("</li><li>") + "</li></ul>"
     }
     
+    // GUI
     var real_body = $('body')
     var body = $('<div class=main_body>') // not the part that is hidden
     var hidden_button = $('<div class=hidden_button>').append(
@@ -389,9 +469,7 @@ function beginGame(joueursRaw) {
     hidden.append(hide_hidden = $('<p class=ici>').text("Secrets (Cliquez pour faire disparaitre)"))
     hidden.append(hidden_list)
     
-    real_body.append(body)
-    real_body.append(hidden_button)
-    real_body.append(hidden)
+    real_body.append([body, hidden_button, hidden])
     
     hidden_button.count = 0
     hidden.hide()
@@ -409,7 +487,7 @@ function beginGame(joueursRaw) {
         }
     })
     
-    var VOUS_ETES_PARALYSE = "Vous êtes paralysé"
+    // STATES
     
     function depouillement(votes) {
         var next = beginOfNight
@@ -432,7 +510,7 @@ function beginGame(joueursRaw) {
         function proceed() {
             var msg;
             if(m == J) {
-                msg = "BLANC meurt."
+                msg = tr.blanc.toUpperCase() + ' ' + lang("meurt", "dies") + "."
             } else {
                 msg = getAutopsie(m)
                 alive[m] = false
@@ -464,7 +542,7 @@ function beginGame(joueursRaw) {
                         return votes[i].length > votes[j].length
                     }
                 ).map(function(i){
-                    var name = i == J ? "Blanc" : joueurs[i]
+                    var name = i == J ? BLANC_NAME : joueurs[i]
                     return $('<tr>').append(
                         $('<td>').text(name)
                     ).append(
@@ -483,11 +561,11 @@ function beginGame(joueursRaw) {
                         div.append(
                             L = $('<div>')
                             .append(
-                                $('<div>').text("Égalité, le chef choisit !")
+                                $('<div>').text(lang("Égalité, le chef choisit !", "Draw, chief chooses!"))
                             )
                             .append(
                                 maxes.map(function(i){
-                                    return $("<div class='item'>").text(i == J ? "BLANC" : joueurs[i]).attr('data-i', i)
+                                    return $("<div class='item'>").text(i == J ? tr.blanc : joueurs[i]).attr('data-i', i)
                                 })
                             ).find('.item')
                                 .click(function(){
@@ -504,7 +582,7 @@ function beginGame(joueursRaw) {
     }
     
     function endOfNight() {
-        say('tout-le-monde-se-reveille.mp3', function(){
+        say(mp3lang('tout-le-monde-se-reveille'), function(){
             var still = range(J).filter(function(i){
                 return alive[i]
             })
@@ -557,7 +635,7 @@ function beginGame(joueursRaw) {
                         if(! contains(still, i)) {
                             login.append(
                                 self = $('<div>').append(
-                                    $('<div>').text("Vous êtes déjà venu !")
+                                    $('<div>').text(lang("Vous êtes déjà venu !", "You already came!"))
                                 ).append(
                                     $('<div class=ici>').text('Ok')
                                     .click(function(){
@@ -568,13 +646,13 @@ function beginGame(joueursRaw) {
                             )
                         } else {
                             login.append(
-                                $('<p>Scrutin</p>')
+                                $('<p>').text(lang('Scrutin', 'Vote'))
                             ).append(
                                 [] // $('<div>').text("Ce qu'il s'est passé sur vous pendant la nuit :")
                             ).append(
                                 [] // $('<div>').text(events[i])
                             ).append(
-                                $('<div>').text("Voter contre...")
+                                $('<div>').text(lang("Voter contre...", "Vote against..."))
                             ).append(
                                 makeListJoueurs(function(j){
                                     votes[j].push(i);
@@ -582,7 +660,7 @@ function beginGame(joueursRaw) {
                                     recreateLogin()
                                 })
                             ).append(
-                                $('<div class="item">').text("Blanc").click(function(){
+                                $('<div class="item">').text(tr.blanc).click(function(){
                                     votes[J].push(i);
                                     still.splice(still.indexOf(i), 1)
                                     recreateLogin()
@@ -594,7 +672,7 @@ function beginGame(joueursRaw) {
                         }
                     })
                 ).append(
-                    $('<p>').text('Restants : ' + still.length)
+                    $('<p>').text(lang('Restants :', "Remaining:") + ' ' + still.length)
                 )
             }
             
@@ -611,7 +689,7 @@ function beginGame(joueursRaw) {
         if(! alive[i] && ! contains(mortsAtNight, i))
             return makeSimpleRole(i + 1)
         
-        say(rolesSlug[i] + "-se-reveille.mp3", function(){
+        say(mp3lang(rolesSlug[i] + "-se-reveille"), function(){
             
             function endOfMe(){
                 div.remove()
@@ -622,7 +700,7 @@ function beginGame(joueursRaw) {
             body.append(div)
             
             div.append(
-                $('<div class=info>').text("Bonjour " + roles[i] + " " + joueurs[i])
+                $('<div class=info>').text(lang("Bonjour", "Hello") + ' ' + roles[i] + ' ' + joueurs[i])
             ).append(
                 $('<ul class=info>').append(
                     events[i].map(function(msg){
@@ -634,7 +712,7 @@ function beginGame(joueursRaw) {
             if(! alive[i] || paralyses[i]){
                 div.append(
                     $('<div class=info>').append(
-                        $('<div>').text("Vous ne pouvez rien faire. Attendez un peu et cliquez sur le bouton.")
+                        $('<div>').text(lang("Vous ne pouvez rien faire. Attendez un peu et cliquez sur le bouton.", "You can't do anything. Wait a bit then click the button."))
                     ).append(
                         $('<div class=ici>').text('Ok')
                         .click(function(){
@@ -654,11 +732,11 @@ function beginGame(joueursRaw) {
                 
                 div.append(
                     $("<div class=info>").text(
-                        isPsy ? "Qui voulez-vous psychanalyser ?" :
-                        isGen ? "Qui voulez-vous génotyper ?" :
-                        isInf ? "" :
-                        isHac ? "Quel rôle voulez-vous hacker ?" :
-                        isEsp ? "Qui voulez-vous espionner ?" :
+                        isPsy ? lang("Qui voulez-vous psychanalyser ?", "Who do you want psychanalyse?") :
+                        isGen ? lang("Qui voulez-vous génotyper ?", "Who do you want to genotype?") :
+                        isInf ? lang("Voulez-vous lire votre info ?", "Do you want to read your info?") :
+                        isHac ? lang("Quel rôle voulez-vous hacker ?", "Which role do you want to hack?") :
+                        isEsp ? lang("Qui voulez-vous espionner ?", "Who do you want to spy?") :
                             "??"
                     )
                 ).append(
@@ -666,9 +744,9 @@ function beginGame(joueursRaw) {
                         div.empty()
                         
                         var msg = joueurs[j] + (
-                            isPsy ? " est actuellement " + etats[j].toUpperCase() :
-                            isGen ? " est de génôme " + genomes[j].toUpperCase() + ' (' + explicationsGenome[genomes[j]] + ')' : 
-                            isEsp ? " a subi " + events_espion[j].length + " opération(s) cette nuit" + 
+                            isPsy ? ' ' + lang('est actuellement', 'is currently') + ' ' + etats[j].toUpperCase() :
+                            isGen ? ' ' + lang('est de génôme', 'has genome') + ' ' + genomes[j].toUpperCase() + ' (' + explicationsGenome[genomes[j]] + ')' : 
+                            isEsp ? " a subi " + events_espion[j].length + ' ' + lang('opération(s) cette nuit', 'operation(s) this night') + 
                             "<ul>" + events_espion[j].map(function(x){
                                 return "<li>" + x + "</li>"
                             }).join('') + "</ul>"
@@ -684,19 +762,22 @@ function beginGame(joueursRaw) {
                             )
                         )
                         
-                        events_espion[j].push("Analysé par " + roles[i])
+                        events_espion[j].push(lang("Analysé par", 'Analyzed by') + ' ' + roles[i])
                         events_hack[i].push(msg)
                         
-                    }) : isInf ? function(){
-                        var msg = "Nombre de mutants : " + getNumberOfMutants()
-                        events_hack[i].push(msg)
+                    }) : isInf ? makeYesNoList(function(j){
+                        var did_say_yes = !j
+                        
+                        var msg = lang("Nombre de mutants :", 'Number of mutants :') + ' ' + getNumberOfMutants()
+                        if(did_say_yes)
+                            events_hack[i].push(msg)
                         return $('<div class=info>').append(
-                            $('<div>').text(msg)
+                            $('<div>').text(did_say_yes ? msg : lang("Information non downloadée", "Information non fetched"))
                         ).append(
                             $('<div class=ici>').text('Ok')
                             .click(endOfMe)
                         )
-                    }() : isHac ? makeListRolesHacker(function(j){
+                    }) : isHac ? makeListRolesHacker(function(j){
                         div.empty().append(
                             $('<div class=info>').click(endOfMe).append(
                                 $('<div>').html(
@@ -727,16 +808,16 @@ function beginGame(joueursRaw) {
         if(! alive[i] && ! contains(mortsAtNight, i))
             return next()
         
-        say("mutant-de-base-se-reveille.mp3", function(){
+        say(mp3lang("mutant-de-base-se-reveille"), function(){
             var div = $('<div class=info>')
             body.append(div)
             
             div.append(
-                $('<div class=info>').text("Bonjour mutant de base")
+                $('<div class=info>').text(lang("Bonjour mutant de base", "Hello base mutant"))
             ).append(
                 events[i].length ? events[i].map(function(msg){
                     return $('<div class=info>').text(msg)
-                }) : $('<div class=info>').text("Rien ne s'est passé")
+                }) : $('<div class=info>').text(lang("Rien ne s'est passé", "Nothing happened"))
             ).append(
                 $('<div class=ici>').text('Ok')
             ).click(function(){
@@ -758,9 +839,9 @@ function beginGame(joueursRaw) {
         }
         
         // if(! anyAlive) {
-        //     say('medecins-se-reveillent-pause-{}.mp3'.replace('{}', 1 + randrange(4)), next)
+        //     say(mp3lang('medecins-se-reveillent-pause-' + (1 + randrange(4))), next)
         // } else {
-            say("medecins-se-reveillent.mp3", function(){
+            say(mp3lang("medecins-se-reveillent"), function(){
                 if(! anyAlive) {
                     setTimeout(next, 10000 + Math.random() * 10000) // allowed for mobile too
                     return;
@@ -770,10 +851,10 @@ function beginGame(joueursRaw) {
                 body.append(div)
                 
                 div.append(
-                    $('<div>').text('Bonjour médecins, que voulez vous faire ?')
+                    $('<div>').text(lang('Hello doctors, what do you want to do?', 'Bonjour médecins, que voulez vous faire ?'))
                 )
                 .append(
-                    $('<div class="item">').text('Soigner').click(function(){
+                    $('<div class="item">').text(lang('Soigner', 'Heal')).click(function(){
                         div.empty()
                         var stillSoins = 0
                         var soins = []
@@ -782,30 +863,30 @@ function beginGame(joueursRaw) {
                             if(alive[i] && ! events[i].length) {
                                 stillSoins++
                                 div.append(
-                                    $('<div>').text("Cible de soin")
+                                    $('<div>').text(lang("Cible de soin", "Heal target"))
                                 ).append(
                                     makeListJoueurs(function(j){
                                         soins.push(j)
                                         
                                         if(etats[j] == "Mutant") {
-                                            if(genomes[j] == "Hôte") {
+                                            if(genomes[j] == tr.hôte) {
                                                 events[j].push("On a essayé de vous soigner mais ça n'a pas marché car vous êtes HÔTE")
                                             } else {
                                                 events[j].push("Vous êtes soigné ! Vous êtes SAIN à nouveau !")
-                                                etats[j] = "Sain"
+                                                etats[j] = tr.sain
                                             }
                                         } else {
                                             events[j].push("On a essayé de vous soigner mais vous êtes déjà sain...")
                                         }
                                         
-                                        events_espion[j].push("Soigné")
+                                        events_espion[j].push(lang("Soigné", "Healed"))
                                         
                                         if(--stillSoins == 0) {
                                             div.remove()
                                             var wait = $('<div class=info>')
                                             body.append(wait)
                                             wait.append(
-                                                $('<div>').text('Vos cibles de soin :')
+                                                $('<div>').text(lang('Vos cibles de soin :', 'Your heal targets:'))
                                             ).append(
                                                 $('<ul>').append(
                                                     soins.map(function(x){
@@ -829,17 +910,17 @@ function beginGame(joueursRaw) {
                 .append(
                     $('<div class="item">').text('Tuer').click(function(){
                         div.empty()
-                        div.append($('<div>').text("Cible de meutre")).append(
+                        div.append($('<div>').text(lang("Cible de meutre", "Murder target"))).append(
                             makeListJoueurs(function(j){
                                 alive[j] = false
-                                events[j].push("Vous êtes MORT")
+                                events[j].push(lang("Vous êtes MORT", "You are DEAD"))
                                 mortsAtNight.push(j)
                                 
                                 div.empty()
-                                say("medecins-ont-tue.mp3", function(){
+                                say(mp3lang("medecins-ont-tue"), function(){
                                     div.append(
                                         $('<div class=info>').append(
-                                            $('<div>').text('Mort de ' + joueurs[j] + " !")
+                                            $('<div>').text(lang('Mort de {} !', "{}'s death!").replace('{}', joueurs[j]))
                                         ).append(
                                             $('<div class=ici>').text('Ok')
                                             .click(function(){
@@ -870,14 +951,14 @@ function beginGame(joueursRaw) {
             if(! alive[i] && ! contains(mortsAtNight, i)) {
                 makeMedecin(n + 1)
             } else {
-                say("medecin-" + n + "-se-reveille.mp3", function(){
+                say(mp3lang("medecin-" + n + "-se-reveille"), function(){
                     var self;
                     body.append(
                         self = $('<div>').append(
-                            $('<div>').text("Bonjour Médecin #" + n + " " + joueurs[i])
+                            $('<div>').text(lang("Bonjour Médecin #", "Hello Doctor #") + n + " " + joueurs[i])
                         ).append(
                             $('<div class=info>').text(
-                                events[i].length ? [] : 'Aucun événement cette nuit'
+                                events[i].length ? [] : lang('Aucun événements cette nuit', 'No events tonight')
                             )
                         ).append(
                             events[i].length ? $('<ul>').append(
@@ -888,8 +969,8 @@ function beginGame(joueursRaw) {
                         ).append(
                             $('<div class=info>').text(
                                 events[i].length ?
-                                    "Vous ne vous réveillerez donc pas avec votre autre médécin." :
-                                    "Vous vous réveillerez donc normalement"
+                                    lang("Vous ne vous réveillerez donc PAS avec votre autre médécin.", "You will then NOT wake up with the other doctor.") :
+                                    lang("Vous vous réveillerez donc normalement", "You will then wake up normally")
                             )
                         ).append(
                             $('<div class=ici>').text('Ok')
@@ -917,23 +998,23 @@ function beginGame(joueursRaw) {
         mortsAtNight = []
         
         if(getNumberOfMutants() == 0) {
-            say("fin-de-partie-sains.mp3", function(){})
+            say(mp3lang("fin-de-partie-sains"), function(){})
             return
         } 
         if (getNumberOfSains() == 0) {
-            say("fin-de-partie-mutants.mp3", function(){})
+            say(mp3lang("fin-de-partie-mutants"), function(){})
             return
         }
         
-        // say("tout-le-monde-s-endort.mp3", function(){
-        say("mutants-se-reveillent.mp3", function(){
+        // say(mp3lang("tout-le-monde-s-endort"), function(){
+        say(mp3lang("mutants-se-reveillent"), function(){
             var div = $('<div>');
             body.append(div)
             
             div.append(
-                $('<div>').text("Bonjour mutants, que voulez-vous faire ?")
+                $('<div>').text(lang("Bonjour mutant(s), que voulez-vous faire ?", "Hello mutant(s), what do you want to do?"))
             ).append(
-                $('<div class="item">').text("Muter et Paralyser").click(function(){
+                $('<div class="item">').text(lang("Muter et Paralyser", "Mutation and Paralysis")).click(function(){
                     div.empty()
                     
                     var par = -1, mut = -1;
@@ -941,30 +1022,30 @@ function beginGame(joueursRaw) {
                     function checkNext() {
                         if(par != -1 && mut != -1) {
                             // apply mutation
-                            if(genomes[mut] != "Résistant") {
-                                events[mut].push("Vous êtes maintenant MUTANT")
-                                etats[mut] = "Mutant"
+                            if(genomes[mut] != tr.résistant) {
+                                events[mut].push(lang("Vous êtes maintenant MUTANT", "You are now MUTANT"))
+                                etats[mut] = tr.mutant
                             } else {
-                                events[mut].push("On a essayé de vous muter mais cela n'a pas marché car vous êtes RÉSISTANT")
+                                events[mut].push(lang("On a essayé de vous muter mais cela n'a pas marché car vous êtes RÉSISTANT", "One tries to mutate you but it did not work because you are RESISTANT"))
                             }
                             // apply paralysis
-                            events[par].push("Vous êtes paralysé")
+                            events[par].push(tr.vous_etes_paralyse)
                             paralyses[par] = true
                             
                             // record mutation
-                            events_espion[mut].push("Muté")
+                            events_espion[mut].push(tr.muté)
                             // record paralysis
-                            events_espion[par].push("Paralysé")
+                            events_espion[par].push(tr.paralysé)
                             
                             div.remove()
                             
                             var wait = $('<div class=info>').append(
-                                $('<div>').text('Vos actions :')
+                                $('<div>').text(lang('Vos actions :', "Your actions:"))
                             ).append(
                                 $('<ul>').append(
-                                    $('<li>').text(joueurs[mut] + " est votre cible de mutation.")
+                                    $('<li>').text(joueurs[mut] + ' ' + lang("est votre cible de mutation.", "is your mutation target."))
                                 ).append(
-                                    $('<li>').text(joueurs[par] + " est paralysé")
+                                    $('<li>').text(joueurs[par] + ' ' + lang("est paralysé", "is paralysed"))
                                 )
                             ).append(
                                 $('<div class=ici>').text('Ok')
@@ -980,14 +1061,14 @@ function beginGame(joueursRaw) {
                     }
                     
                     div.append(
-                        $('<div>').text('Cible de mutation :')
+                        $('<div>').text(lang('Cible de mutation :', "Mutation target:"))
                     ).append(
                         makeListJoueurs(function(m){
                             mut = m
                             checkNext()
                         })
                     ).append(
-                        $('<div>').text('Cible de paralysie :')
+                        $('<div>').text(lang('Cible de paralysie :', 'Paralysis target:'))
                     ).append(
                         makeListJoueurs(function(p){
                             par = p
@@ -996,7 +1077,7 @@ function beginGame(joueursRaw) {
                     )
                 })
             ).append(
-                $('<div class="item">').text("Tuer et Paralyser").click(function(){
+                $('<div class="item">').text(lang("Tuer et Paralyser", "Kill and Paralyse")).click(function(){
                     div.empty()
                     
                     var par = -1, tue = -1;
@@ -1005,25 +1086,25 @@ function beginGame(joueursRaw) {
                         if(par != -1 && tue != -1) {
                             // apply death
                             alive[tue] = false
-                            events[tue].push("Vous êtes MORT")
+                            events[tue].push(lang("Vous êtes MORT", "You are DEAD"))
                             mortsAtNight.push(tue)
                             
                             // apply paralysis
-                            events[par].push("Vous êtes paralysé")
+                            events[par].push(tr.vous_etes_paralyse)
                             paralyses[par] = true
                             
                             // record paralysis
-                            events_espion[par].push("Paralysé")
+                            events_espion[par].push(tr.paralysé)
                             
                             div.remove()
                             
                             var wait = $('<div class=info>').append(
-                                $('<div>').text('Vos actions :')
+                                $('<div>').text(lang('Vos actions :', "Your actions:"))
                             ).append(
                                 $('<ul>').append(
-                                    $('<li>').text(joueurs[tue] + " est tué")
+                                    $('<li>').text(joueurs[tue] + ' ' + lang("est tué", "is killed"))
                                 ).append(
-                                    $('<li>').text(joueurs[par] + " est paralysé")
+                                    $('<li>').text(joueurs[par] + ' ' + lang("is paralysed", "est paralysé"))
                                 )
                             ).append(
                                 $('<div class=ici>').text('Ok')
@@ -1034,11 +1115,11 @@ function beginGame(joueursRaw) {
                             wait.click(function(){
                                 wait.remove()
                                 
-                                say("mutants-ont-tue.mp3", function(){
+                                say(mp3lang("mutants-ont-tue"), function(){
                                     var infodeath;
                                     body.append(
                                         infodeath = $('<div class=info>').append(
-                                            $('<div>').text("Mort de " + joueurs[tue] + " !")
+                                            $('<div>').text(lang("Mort de {} !", "{}'s death!").replace('{}',joueurs[tue]))
                                         ).append(
                                             $('<div class=ici>').text('Ok')
                                             .click(function(){
@@ -1054,14 +1135,14 @@ function beginGame(joueursRaw) {
                     }
                     
                     div.append(
-                        $('<div>').text('Cible de meurtre :')
+                        $('<div>').text(lang('Cible de meurtre :', 'Murder target:'))
                     ).append(
                         makeListJoueurs(function(m){
                             tue = m
                             checkNext()
                         })
                     ).append(
-                        $('<div>').text('Cible de paralysie :')
+                        $('<div>').text(lang('Cible de paralysie :', 'Paralysis target:'))
                     ).append(
                         makeListJoueurs(function(p){
                             par = p
@@ -1076,7 +1157,7 @@ function beginGame(joueursRaw) {
                             mortsAtNight.push(j)
                             
                             div.empty()
-                            say("mutants-ont-tue.mp3", function(){
+                            say(mp3lang("mutants-ont-tue"), function(){
                                 div.append(
                                     $('<div class=info>').append(
                                         $('<div>').text("Mort de " + joueurs[j] + " !")
@@ -1102,7 +1183,7 @@ function beginGame(joueursRaw) {
         body.append(
             self = $('<div class=info>')
             .append(
-                $('<div>').text("Choisissez un chef et puis GO !")
+                $('<div>').text(lang("Choisissez un chef et puis GO !", "Choose a chief then GO!"))
             )
             .append(
                 $('<div class=ici>').text('Ok')
@@ -1133,7 +1214,7 @@ function beginGame(joueursRaw) {
             }
             
             login.empty().append(
-                "Login pour informations :"
+                lang("Login pour informations :", "Login for informations")
             ).append(
                 makeListJoueurs(function(i){
                     var self;
@@ -1142,7 +1223,7 @@ function beginGame(joueursRaw) {
                     if(! contains(still, i)) {
                         login.append(
                             self = $('<div class=info>').append(
-                                $('<div>').text("Vous êtes déjà venu !")
+                                $('<div>').text(lang("Vous êtes déjà venu !", "You already came!"))
                             ).append(
                                 $('<div class=ici>').text('Ok')
                                 .click(function(){
@@ -1157,13 +1238,13 @@ function beginGame(joueursRaw) {
                         login.append(
                             $('<div class=info>')
                             .append(
-                                $('<div>').text("Bonjour " + joueurs[i])
+                                $('<div>').text(lang("Bonjour", "Hello") + ' ' + joueurs[i])
                             ).append(
-                                $('<div class=info>').text("Vous êtes " + roles[i])
+                                $('<div class=info>').text(lang("Vous êtes", "You are") + ' ' + roles[i])
                             )
                             .append(
                                 ! startswith(rolesSlug[i], "medecin") ? [] :
-                                $('<div class=info>').text("Et l'autre médecin est " + joueurs.filter(function(name, j){
+                                $('<div class=info>').text(lang("Et l'autre médecin est", "And the other doctor is") + ' ' + joueurs.filter(function(name, j){
                                     return j != i && startswith(rolesSlug[j], "medecin")
                                 }))
                             )
