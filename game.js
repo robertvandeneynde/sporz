@@ -107,7 +107,7 @@ var tr = (function(){ // will vary in first menu only
     for(var k in tr_base)
         D[k] = tr_base[k][0]
     return D
-})()
+})() // should use a ES6 Proxy to throw an error when not in dict
 
 function lang(/* arguments... */) {
     return arguments[tr.langid] || arguments[0]
@@ -726,6 +726,7 @@ function beginGame(joueursRaw, config) {
         
         if(! alive[i] && ! contains(mortsAtNight, i))
             return makeSimpleRole(i + 1)
+        // if(startswith(rolesSlug[i], 'astronaute') || startswith(rolesSlug[i], 'traitre'))
         
         say(mp3lang(rolesSlug[i] + "-se-reveille"), function(){
             
@@ -741,16 +742,20 @@ function beginGame(joueursRaw, config) {
                 $('<div class=info>').text(lang("Bonjour", "Hello") + ' ' + roles[i] + ' ' + joueurs[i])
             ).append(
                 $('<ul class=info>').append(
-                    events[i].map(function(msg){
+                    events[i].length ? events[i].map(function(msg){
                         return $('<li>').text(msg)
-                    })
+                    }) : $('<li>').text(lang("Rien ne s'est passé", "Nothing happened"))
                 )
             )
             
-            if(! alive[i] || paralyses[i]){
+            if(/^astronaute|^traitre/.exec(rolesSlug[i]) || ! alive[i] || paralyses[i]){
                 div.append(
                     $('<div class=info>').append(
-                        $('<div>').text(lang("Vous ne pouvez rien faire. Attendez un peu et cliquez sur le bouton.", "You can't do anything. Wait a bit then click the button."))
+                        $('<div>').text(
+                            /^astronaute|^traitre/.exec(rolesSlug[i])
+                            ? lang("Vous ne pouvez rien faire. Cliquez sur le bouton.", "You can't do anything. Click the button.")
+                            : lang("Vous ne pouvez rien faire. Attendez un peu et cliquez sur le bouton.", "You can't do anything. Wait a bit then click the button.")
+                        )
                     ).append(
                         $('<div class=ici>').text('Ok')
                         .click(function(){
