@@ -2,12 +2,10 @@ function randrange(N){
     return Math.floor(Math.random() * N)
 }
 
-/*
 var irandom = 0;
 function randrange(N) {
     return (5 + irandom++ * 3) % N
-} 
-*/
+}
 
 function shuffled(L) {
     var C = L.concat()
@@ -28,7 +26,7 @@ function sorted(L, keyfunc) {
 }
 
 /**
- * = (Python) [value] * N
+ * Python: [value] * N
  */
 function arrayFilled(value, N) {
     var L = new Array(N)
@@ -94,7 +92,7 @@ function noDuplicates(L) {
 const tr_base = {
     "blanc": ["Blanc", "Dummy"],
     "personne": ["Personne", "Nobody"],
-    "vous_etes_paralyse", ["Vous êtes paralysé", "You are paralyzed"],
+    "vous_etes_paralyse": ["Vous êtes paralysé", "You are paralyzed"],
     "neutre": ["Neutre", "Neutral"],
     "hôte": ["Hôte", "Host"],
     "résistant": ["Résistant", "Resistant"],
@@ -130,7 +128,7 @@ $(function(){
         var inputs, Joueur;
         self.append(
             $('<div>').css('font-variant', 'small-caps').html(lang('English', 'French')).click(function(){
-                ++tr.langid %= 2
+                tr.langid = (tr.langid + 1) % 2
                 for(var k in tr_base)
                     tr[k] = tr_base[k][tr.langid]
                 refreshMenu()
@@ -174,9 +172,8 @@ $(function(){
         inputs[0].focus()
     }
     
-    refreshMenu()
+    // refreshMenu()
     
-    /*
     beginGame([
         "Genet RRR",
         "Psi",
@@ -187,7 +184,6 @@ $(function(){
         "Spi",
         "MeduMedu",
     ]) // avec un randrange(N) = (5 + irandom++ * 3) % N, les infos correspondent   
-    */
 })
 
 // TODO: rien faire
@@ -284,14 +280,14 @@ function beginGame(joueursRaw) {
                 $('<table class=secret_table>')
                 .append(
                     $('<tr>').append('<th>' + [
-                        "Nom",
-                        "Rôle",
-                        "Génôme",
-                        "Spore",
-                        "Vie",
-                        "Événements",
-                        "Hack",
-                        "Espion",
+                        lang("Nom", "Name"),
+                        lang("Rôle", "Role"),
+                        lang("Génôme", "Genome"),
+                        lang("Spore", "Spore"),
+                        lang("Vie", "Alive"),
+                        lang("Événements", "Events"),
+                        lang("Hack", "Hack"),
+                        lang("Espion", "Spy"),
                     ].join('</th><th>') + '</th>')
                 )
                 .append(
@@ -306,7 +302,7 @@ function beginGame(joueursRaw) {
                             roles[i],
                             (genomes[i] == tr.neutre ? "<span class=default_elem>" + genomes[i] + "</span>" : genomes[i]),
                             (etats[i] == tr.sain ? "<span class=default_elem>" + etats[i] + "</span>" : etats[i]),
-                            (alive[i] ? "<span class=default_elem>" + "Vivant" + "</span>" : "Mort"),
+                            (alive[i] ? "<span class=default_elem>" + lang("Vivant", "Alive") + "</span>" : lang("Mort", "Dead")),
                             toUl(events[i]),
                             toUl(events_hack[i]),
                             toUl(events_espion[i]),
@@ -347,11 +343,10 @@ function beginGame(joueursRaw) {
         // - What happens when hacking a paralysed informaticien -> TODO
     })
     
-    var explicationsGenome = {
-        tr.neutre: "Peut être muté, puis soigné, puis muté, puis soigné... à l'infini",
-        tr.hôte: "Une fois muté, ne peut jamais être soigné.",
-        tr.résistant: "Ne peut pas être muté !",
-    }
+    var explicationsGenome = {}
+    explicationsGenome[tr.neutre] = lang("Peut être muté, puis soigné, puis muté, puis soigné... à l'infini", "Can be mutated, then healed, then mutated, then healed... to infinite and beyond")
+    explicationsGenome[tr.hôte] = lang("Une fois muté, ne peut jamais être soigné.", "Once mutated, can never be healed.")
+    explicationsGenome[tr.résistant] = lang("Ne peut pas être muté !", "Can't be mutated!")
     
     function makeEmptyLists() {
         return joueurs.map(function(){
@@ -414,7 +409,7 @@ function beginGame(joueursRaw) {
     }
     
     function getListYesNo() {
-        return $("<div>").append(["Oui", "Non"].map(function(txt, i) {
+        return $("<div>").append([lang("Oui", "Yes"), lang("Non", "No")].map(function(txt, i) {
             return $("<span class='item'>").attr("data-i", i).text(txt)
         }))
     }
@@ -449,7 +444,7 @@ function beginGame(joueursRaw) {
     }
     
     function getAutopsie(m) {
-        return "Mort de " + joueurs[m] + " qui était <ul><li>" + [
+        return lang("Mort de {} qui était", "{}'s death who was").replace('{}', joueurs[m]) + ' ' + "<ul><li>" + [
             roles[m],
             etats[m],
             genomes[m] + ' (' + explicationsGenome[genomes[m]] + ')',
@@ -740,10 +735,10 @@ function beginGame(joueursRaw) {
                             "??"
                     )
                 ).append(
-                    (isPsy || isGen || isEsp) ? makeListJoueurs(function(j){
+                    (isPsy || isGen || isEsp) ? makeListJoueursBlanc(function(j){
                         div.empty()
                         
-                        var msg = joueurs[j] + (
+                        var msg = j == J ? '' : joueurs[j] + (
                             isPsy ? ' ' + lang('est actuellement', 'is currently') + ' ' + etats[j].toUpperCase() :
                             isGen ? ' ' + lang('est de génôme', 'has genome') + ' ' + genomes[j].toUpperCase() + ' (' + explicationsGenome[genomes[j]] + ')' : 
                             isEsp ? " a subi " + events_espion[j].length + ' ' + lang('opération(s) cette nuit', 'operation(s) this night') + 
@@ -755,28 +750,37 @@ function beginGame(joueursRaw) {
                         
                         div.append(
                             $('<div class=info>').append(
-                                $('<div>').html(msg)
+                                $('<div>').html(j == J ? lang('Vous avez choisi de ne choisir personne, vous ne serez donc pas hackable.', 'You chose to choose no one, therefore you will not be hackable.') : msg)
                             ).append(
                                 $('<div class=ici>').text('Ok')
                                 .click(endOfMe)
                             )
                         )
                         
-                        events_espion[j].push(lang("Analysé par", 'Analyzed by') + ' ' + roles[i])
-                        events_hack[i].push(msg)
-                        
+                        if(j != J) {
+                            events_espion[j].push(lang("Analysé par", 'Analyzed by') + ' ' + roles[i])
+                            events_hack[i].push(msg)
+                        }
+
                     }) : isInf ? makeYesNoList(function(j){
+                        div.empty()
+                        
                         var did_say_yes = !j
                         
                         var msg = lang("Nombre de mutants :", 'Number of mutants :') + ' ' + getNumberOfMutants()
-                        if(did_say_yes)
-                            events_hack[i].push(msg)
-                        return $('<div class=info>').append(
-                            $('<div>').text(did_say_yes ? msg : lang("Information non downloadée", "Information non fetched"))
-                        ).append(
-                            $('<div class=ici>').text('Ok')
-                            .click(endOfMe)
+                        
+                        div.append(
+                            $('<div class=info>').append(
+                                $('<div>').text(did_say_yes ? msg : lang("Information non downloadée", "Information non fetched"))
+                            ).append(
+                                $('<div class=ici>').text('Ok')
+                                .click(endOfMe)
+                            )
                         )
+                        
+                        if(did_say_yes) {
+                            events_hack[i].push(msg)
+                        }
                     }) : isHac ? makeListRolesHacker(function(j){
                         div.empty().append(
                             $('<div class=info>').click(endOfMe).append(
@@ -851,7 +855,7 @@ function beginGame(joueursRaw) {
                 body.append(div)
                 
                 div.append(
-                    $('<div>').text(lang('Hello doctors, what do you want to do?', 'Bonjour médecins, que voulez vous faire ?'))
+                    $('<div>').text(lang('Bonjour médecins, que voulez vous faire ?', 'Hello doctors, what do you want to do?'))
                 )
                 .append(
                     $('<div class="item">').text(lang('Soigner', 'Heal')).click(function(){
