@@ -120,13 +120,13 @@ function mp3lang(basename) {
 $(function(){
     var body = $('body')
     
-    var config = {
-        traitreRole: true,
-    }
-    
     function refreshMenu() {
         var self = $('<div>')
         body.empty().append(self)
+        
+        var config = {
+            traitreRole: true,
+        }
         
         var inputs, Joueur;
         self.append(
@@ -224,10 +224,14 @@ function beginGame(joueursRaw, config) {
     };
     
     var J = joueursRaw.length
+    var nMutants = 1
+    var nMedecins = 2
+    var nTraitre = config.traitreRole ? Math.min(J-8, 1) : 0
+    var nAstro = J - 8 - nTraitre
     
     // Example :
     // joueursRaw    = ["A", "B", "C", "D", "E", "F", "G", "H"]
-    //                0    1    2    3    4    5    6    7
+    //                   0    1    2    3    4    5    6    7
     var joueursRandom = shuffled(joueursRaw.map(function(j,r){ return [j,r] }))
     // joueursRandom = [] 
     var initialorder = joueursRandom.map(function(t){ return t[1]; })
@@ -242,27 +246,26 @@ function beginGame(joueursRaw, config) {
         lang("Hacker"),
         lang("Espion", "Spy")
     ].concat(
-        config.traitreRole ? [lang('Traître', 'Traitor')] : []
+        range(nTraitre).map(function(j){
+            return lang('Traître', 'Traitor') + (nTraitre <= 1 ? '' : ' #' + (j+1))
+        })
     ).concat(
-        range(J-(config.traitreRole ? 7 : 8)).map(function(j){
-            return lang('Astronaute', 'Astronaut') + (
-                J-(config.traitreRole ? 7 : 8) <= 1 ? '' : ' #' + (j+1)
-            )
+        range(nAstro).map(function(j){
+            return lang('Astronaute', 'Astronaut') + (nAstro <= 1 ? '' : ' #' + (j+1))
         })
     )
+    
     var rolesSlug = [
         "mutant-de-base", "medecin-1", "medecin-2", "psychologue", "geneticien", "informaticien", "hacker", "espion"
     ].concat(
-        config.traitreRole ? ['traitre'] : []
+        range(nTraitre).map(function(j){
+            return 'traitre' + (nTraitre <= 1 ? '' : '-' + (j+1))
+        })
     ).concat(
-        range(J-(config.traitreRole ? 7 : 8)).map(function(j){
-            return 'astronaute' + (
-                J-(config.traitreRole ? 7 : 8) <= 1 ? '' : '-' + (j+1)
-            )
+        range(nAstro).map(function(j){
+            return 'astronaute' + (nAstro <= 1 ? '' : '-' + (j+1))
         })
     )
-    var nMutants = 1
-    var nMedecins = 2
     
     var genomes = [tr.hôte, tr.neutre, tr.neutre].concat(shuffled([tr.hôte, tr.résistant].concat(arrayFilled(tr.neutre, J-5))))
     var etats = [tr.mutant].concat(arrayFilled(tr.sain, J-1))
@@ -312,7 +315,7 @@ function beginGame(joueursRaw, config) {
         hidden_list.prepend(
             $('<div>')
             .append(
-                $('<p>').text('Nuit ' + night + ' ' + reason)
+                $('<p>').text(lang('Nuit', 'Night') + ' ' + night + ' ' + reason)
             )
             .append(
                 $('<table class=secret_table>')
@@ -493,13 +496,13 @@ function beginGame(joueursRaw, config) {
     var real_body = $('body')
     var body = $('<div class=main_body>') // not the part that is hidden
     var hidden_button = $('<div class=hidden_button>').append(
-        $('<span class=ici>').text('Voir les secrets ! (Cliquez 10 fois)')
+        $('<span class=ici>').text(lang('Voir les secrets ! (Cliquez 10 fois)', 'See secrets! (Click 10 times)'))
     )
     var hidden = $('<div class=hidden_body>') // for the log !
     var hidden_list = $('<div>')
     
     var hide_hidden;
-    hidden.append(hide_hidden = $('<p class=ici>').text("Secrets (Cliquez pour faire disparaitre)"))
+    hidden.append(hide_hidden = $('<p class=ici>').text(lang("Secrets (Cliquez pour faire disparaitre)", 'Secrets (Click to make them dissapear')))
     hidden.append(hidden_list)
     
     real_body.append([body, hidden_button, hidden])
@@ -781,7 +784,7 @@ function beginGame(joueursRaw, config) {
                         var msg = j == J ? '' : joueurs[j] + (
                             isPsy ? ' ' + lang('est actuellement', 'is currently') + ' ' + etats[j].toUpperCase() :
                             isGen ? ' ' + lang('est de génôme', 'has genome') + ' ' + genomes[j].toUpperCase() + ' (' + explicationsGenome[genomes[j]] + ')' : 
-                            isEsp ? " a subi " + events_espion[j].length + ' ' + lang('opération(s) cette nuit', 'operation(s) this night') + 
+                            isEsp ? ' ' + lang("a subi", 'suffered') + ' ' + events_espion[j].length + ' ' + lang('opération(s) cette nuit', 'operation(s) this night') + 
                             "<ul>" + events_espion[j].map(function(x){
                                 return "<li>" + x + "</li>"
                             }).join('') + "</ul>"
@@ -952,7 +955,7 @@ function beginGame(joueursRaw, config) {
                     })
                 )
                 .append(
-                    $('<div class="item">').text('Tuer').click(function(){
+                    $('<div class="item">').text(lang('Tuer', 'Murder')).click(function(){
                         div.empty()
                         div.append($('<div>').text(lang("Cible de meutre", "Murder target"))).append(
                             makeListJoueurs(function(j){
