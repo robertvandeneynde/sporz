@@ -2,10 +2,10 @@ function randrange(N){
     return Math.floor(Math.random() * N)
 }
 
-var irandom = 0;
+/* var irandom = 0;
 function randrange(N) {
     return (5 + irandom++ * 3) % N
-}
+} */
 
 function shuffled(L) {
     var C = L.concat()
@@ -114,12 +114,15 @@ function lang(/* arguments... */) {
 }
 
 function mp3lang(basename) {
-    return basename + '.mp3'
-    // return basename + '-' + lang('fr', 'en') + '.mp3'
+    return basename + '.' + lang('fr', 'en') + '.mp3'
 }
 
 $(function(){
     var body = $('body')
+    
+    var config = {
+        traitreRole: true,
+    }
     
     function refreshMenu() {
         var self = $('<div>')
@@ -127,18 +130,28 @@ $(function(){
         
         var inputs, Joueur;
         self.append(
-            $('<div>').css('font-variant', 'small-caps').html(lang('English', 'French')).click(function(){
+            $('<div class=ici>').css('font-variant', 'small-caps').html(lang('English', 'French')).click(function(){
                 tr.langid = (tr.langid + 1) % 2
                 for(var k in tr_base)
                     tr[k] = tr_base[k][tr.langid]
                 refreshMenu()
             })
         ).append(
-            $('<div>').html(lang('Indiquez le nom des joueurs ici et <strong>activez le son</strong> !', 'Write players name in here and <strong>turn on the volume</strong>!'))
+            $('<p>').html(lang('Indiquez le nom des joueurs ici et <strong>activez le son</strong> !', 'Write players name in here and <strong>turn on the volume</strong>!'))
         ).append(
             inputs = range(8).map(Joueur = function(i){
                 return $('<input class="joueur-input" type="text" />').attr('placeholder', lang('Joueur', 'Player') + ' ' + (i+1))
             })
+        ).append(
+            $('<p>').append(
+                $('<label>').append(
+                    $('<input type=checkbox checked />').click(function(){
+                        config.traitreRole = this.checked
+                    })
+                ).append(
+                    $('<span>').text(lang('Rajouter un traître comme rôle', 'Add a Traitor as a role'))
+                )
+            )   
         ).append(
             $("<div class=ici>").css('display', 'block').text('+').click(function(){
                 var n = Joueur(inputs.length)
@@ -147,7 +160,11 @@ $(function(){
             })
         ).append(
             $("<div class=ici>").css('display', 'block').text('−').click(function(){
-                inputs.pop().remove()
+                if(inputs.length > 8) {
+                    inputs.pop().remove()
+                } else {
+                    alert(lang("8 est le minimum", "8 is the minimum"))
+                }
             })
         ).append(
             $("<div class=ici>").css('display', 'block').text("Ok !").click(function(){
@@ -162,7 +179,7 @@ $(function(){
                     alert(lang("Un joueur s'appelle Blanc !", "One player is called Dummy!"))
                 } else {
                     self.remove()
-                    beginGame(players)
+                    beginGame(players, config)
                 }
             }).click(function(){
                 $('#intro').hide()
@@ -172,9 +189,9 @@ $(function(){
         inputs[0].focus()
     }
     
-    // refreshMenu()
+    refreshMenu()
     
-    beginGame([
+    /* beginGame([
         "Genet RRR",
         "Psi",
         "MediMedi",
@@ -183,14 +200,17 @@ $(function(){
         "Terrible Mutant",
         "Spi",
         "MeduMedu",
-    ]) // avec un randrange(N) = (5 + irandom++ * 3) % N, les infos correspondent   
+    ], config) */ // avec un randrange(N) = (5 + irandom++ * 3) % N, les infos correspondent   
 })
 
 // TODO: rien faire
 // TODO: quid du hacker qui n'a plus personne à hacker
 // Les mutants peuvent tuer ET paralyser
 
-function beginGame(joueursRaw) {
+function beginGame(joueursRaw, config) {
+    config = config || {}
+    config.traitreRole = config.traitreRole == null ? true : config.traitreRole
+    
     window.onbeforeunload = function (e) {
         var message = lang("La partie sera perdue si vous partez !", "The game will be lost if you leave!")
         e = e || window.event;
@@ -221,8 +241,26 @@ function beginGame(joueursRaw) {
         lang("Informaticien", "Programmer"),
         lang("Hacker"),
         lang("Espion", "Spy")
-    ]
-    var rolesSlug = ["mutant-de-base", "medecin-1", "medecin-2", "psychologue", "geneticien", "informaticien", "hacker", "espion"]
+    ].concat(
+        config.traitreRole ? [lang('Traître', 'Traitor')] : []
+    ).concat(
+        range(J-(config.traitreRole ? 7 : 8)).map(function(j){
+            return lang('Astronaute', 'Astronaut') + (
+                J-(config.traitreRole ? 7 : 8) <= 1 ? '' : ' #' + (j+1)
+            )
+        })
+    )
+    var rolesSlug = [
+        "mutant-de-base", "medecin-1", "medecin-2", "psychologue", "geneticien", "informaticien", "hacker", "espion"
+    ].concat(
+        config.traitreRole ? ['traitre'] : []
+    ).concat(
+        range(J-(config.traitreRole ? 7 : 8)).map(function(j){
+            return 'astronaute' + (
+                J-(config.traitreRole ? 7 : 8) <= 1 ? '' : '-' + (j+1)
+            )
+        })
+    )
     var nMutants = 1
     var nMedecins = 2
     
@@ -266,10 +304,10 @@ function beginGame(joueursRaw) {
     }
     
     var printAll = function(reason) {
-        if(night == 0) {
-            hidden.append('<p>Game not started</p>')
-            return;
-        }
+        // if(night == 0) {
+        //     hidden.append('<p>Game not started</p>')
+        //     return;
+        // }
         
         hidden_list.prepend(
             $('<div>')
@@ -303,9 +341,9 @@ function beginGame(joueursRaw) {
                             (genomes[i] == tr.neutre ? "<span class=default_elem>" + genomes[i] + "</span>" : genomes[i]),
                             (etats[i] == tr.sain ? "<span class=default_elem>" + etats[i] + "</span>" : etats[i]),
                             (alive[i] ? "<span class=default_elem>" + lang("Vivant", "Alive") + "</span>" : lang("Mort", "Dead")),
-                            toUl(events[i]),
-                            toUl(events_hack[i]),
-                            toUl(events_espion[i]),
+                            night == 0 ? '' : toUl(events[i]),
+                            night == 0 ? '' : toUl(events_hack[i]),
+                            night == 0 ? '' : toUl(events_espion[i]),
                         ].join('</td><td>') + '</td></tr>')
                     })
                 )
@@ -481,6 +519,8 @@ function beginGame(joueursRaw) {
             hidden.show()
         }
     })
+    
+    printAll(lang('Début', 'Begin'))
     
     // STATES
     
