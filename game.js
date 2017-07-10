@@ -1121,7 +1121,7 @@ function beginGame(joueursRaw, config) {
                     )
                 })
             ).append(
-                $('<div class="item">').text(lang("Tuer et Paralyser", "Kill and Paralyse")).click(function(){
+                $('<div class="item">').text(lang("Tuer et Paralyser", "Murder and Paralysis")).click(function(){
                     div.empty()
                     
                     var par = -1, tue = -1;
