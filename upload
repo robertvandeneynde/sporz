@@ -1,0 +1,1 @@
+rsync -r --delete . robert@robertvandeneynde.be:siteperso/sporz
