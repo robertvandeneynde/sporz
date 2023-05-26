@@ -580,7 +580,7 @@ function beginGame(joueursRaw, config) {
                         return votes[i].length > votes[j].length
                     }
                 ).map(function(i){
-                    var name = i == J ? BLANC_NAME : joueurs[i]
+                    var name = i == J ? tr.blanc : joueurs[i]
                     return $('<tr>').append(
                         $('<td>').text(name)
                     ).append(
