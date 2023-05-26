@@ -664,7 +664,7 @@ function beginGame(joueursRaw, config) {
                 firstTime = false;
                     
                 login.append(
-                    'Login du bureau de vote : '
+                    lang('Login du bureau de vote : ', "Login for voting :")
                 ).append(
                     makeListJoueurs(function(i){
                         var self;
@@ -922,13 +922,13 @@ function beginGame(joueursRaw, config) {
                                         
                                         if(etats[j] == "Mutant") {
                                             if(genomes[j] == tr.hôte) {
-                                                events[j].push("On a essayé de vous soigner mais ça n'a pas marché car vous êtes HÔTE")
+                                                events[j].push(lang("On a essayé de vous soigner mais ça n'a pas marché car vous êtes HÔTE", "One tries to heal you but it didn't work because you are HOST"))
                                             } else {
-                                                events[j].push("Vous êtes soigné ! Vous êtes SAIN à nouveau !")
+                                                events[j].push(lang("Vous êtes soigné ! Vous êtes SAIN à nouveau !", "You have been healed ! You lpay for the SANE again !"))
                                                 etats[j] = tr.sain
                                             }
                                         } else {
-                                            events[j].push("On a essayé de vous soigner mais vous êtes déjà sain...")
+                                            events[j].push(lang("On a essayé de vous soigner mais vous êtes déjà sain...", "One tries to heal you but you were already sane..."))
                                         }
                                         
                                         events_espion[j].push(lang("Soigné", "Healed"))
@@ -960,7 +960,7 @@ function beginGame(joueursRaw, config) {
                     })
                 )
                 .append(
-                    $('<div class="item">').text(lang('Tuer', 'Murder')).click(function(){
+                    $('<div class="item">').text(lang('Tuer', 'Kill')).click(function(){
                         div.empty()
                         div.append($('<div>').text(lang("Cible de meutre", "Murder target"))).append(
                             makeListJoueurs(function(j){
@@ -1129,7 +1129,7 @@ function beginGame(joueursRaw, config) {
                     )
                 })
             ).append(
-                $('<div class="item">').text(lang("Tuer et Paralyser", "Murder and Paralysis")).click(function(){
+                $('<div class="item">').text(lang("Tuer et Paralyser", "Kill and Paralyse")).click(function(){
                     div.empty()
                     
                     var par = -1, tue = -1;
