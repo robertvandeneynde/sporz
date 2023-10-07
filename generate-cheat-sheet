@@ -1,1 +1,2 @@
 inkscape cheat-sheet.svg --export-type=pdf
+mv cheat-sheet.svg.pdf cheat-sheet.pdf
