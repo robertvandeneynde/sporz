@@ -1,2 +1,3 @@
-inkscape cheat-sheet.svg --export-type=pdf
-mv cheat-sheet.svg.pdf cheat-sheet.pdf
+inkscape "$1" --export-type=pdf
+#mv cheat-sheet.svg.pdf cheat-sheet.pdf
+echo "$1.pdf"
